@@ -1,0 +1,13 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cookall.example/contracts/etl-run.schema.json",
+  "title":"EtlRun",
+  "type":"object","additionalProperties":false,
+  "required":["runId","sourceKey","startedAt","finishedAt","normalizationVersion","counts","errors"],
+  "properties": {
+    "runId":{"type":"string"},"sourceKey":{"type":"string"},"startedAt":{"type":"string","format":"date-time"},"finishedAt":{"type":["string","null"],"format":"date-time"},"normalizationVersion":{"type":"string"},
+    "counts":{"type":"object","additionalProperties":false,"required":["read","inserted","updated","unchanged","rejected"],"properties":{"read":{"type":"integer","minimum":0},"inserted":{"type":"integer","minimum":0},"updated":{"type":"integer","minimum":0},"unchanged":{"type":"integer","minimum":0},"rejected":{"type":"integer","minimum":0}}},
+    "errors":{"type":"array","items":{"type":"string"}}
+  }
+}
+

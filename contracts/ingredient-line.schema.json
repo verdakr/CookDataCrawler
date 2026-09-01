@@ -1,0 +1,15 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cookall.example/contracts/ingredient-line.schema.json",
+  "title":"NormalizedIngredientLine",
+  "type":"object","additionalProperties":false,
+  "required":["originalText","quantity","unit","unitRaw","unitKind","unitStatus","ingredientText","preparationNote","variant","ingredientId","normalizationStatus","confidence","ruleVersion","reviewRequired","candidateSlug"],
+  "properties": {
+    "originalText":{"type":"string","minLength":1},
+    "quantity":{"type":"object","additionalProperties":false,"required":["min","max"],"properties":{"min":{"type":["number","null"],"minimum":0},"max":{"type":["number","null"],"minimum":0}}},
+    "unit":{"type":["string","null"]},"unitRaw":{"type":["string","null"]},"unitKind":{"type":["string","null"]},"unitStatus":{"enum":["recognized","not_present","unknown"]},
+    "ingredientText":{"type":"string"},"preparationNote":{"type":["string","null"]},"variant":{"type":["string","null"]},
+    "ingredientId":{"type":["string","null"]},"normalizationStatus":{"enum":["matched","ambiguous","unmatched"]},
+    "confidence":{"type":"number","minimum":0,"maximum":1},"ruleVersion":{"type":"string"},"reviewRequired":{"type":"boolean"},"candidateSlug":{"type":"string"}
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://cookall.example/contracts/source-record.schema.json",
+  "title": "SourceRecord",
+  "type": "object",
+  "additionalProperties": true,
+  "required": ["schemaVersion","sourceKey","sourceRecipeId","sourceUrl","language","fetchedAt","rawPayload","contentHash","license","attribution"],
+  "properties": {
+    "schemaVersion": {"const":"1.0.0"},
+    "sourceKey": {"enum":["themealdb_api","wikibooks_mediawiki","recipe_commons"]},
+    "sourceRecipeId": {"type":"string","minLength":1},
+    "sourceUrl": {"type":"string","format":"uri"},
+    "language": {"type":"string","pattern":"^[a-z]{2,3}(-[A-Z]{2})?$"},
+    "fetchedAt": {"type":"string","format":"date-time"},
+    "revision": {"type":["string","null"]},
+    "rawPayload": {"type":"object"},
+    "contentHash": {"type":"string","pattern":"^sha256:[a-f0-9]{64}$"},
+    "license": {"$ref":"#/$defs/license"},
+    "attribution": {"$ref":"#/$defs/attribution"}
+  },
+  "$defs": {
+    "license": {
+      "type":"object","additionalProperties":false,
+      "required":["name","url","scope","verified","verifiedAt"],
+      "properties":{"name":{"type":"string"},"url":{"type":"string","format":"uri"},"scope":{"type":"string"},"verified":{"type":"boolean"},"verifiedAt":{"type":"string","format":"date"}}
+    },
+    "attribution": {
+      "type":"object","additionalProperties":false,
+      "required":["text","url","required"],
+      "properties":{"text":{"type":"string"},"url":{"type":"string","format":"uri"},"required":{"type":"boolean"}}
+    }
+  }
+}
+

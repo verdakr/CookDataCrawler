@@ -1,0 +1,12 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cookall.example/contracts/ingredient.schema.json",
+  "title":"IngredientConcept",
+  "type":"object","additionalProperties":false,
+  "required":["canonicalKey","labels","categoryKey"],
+  "properties": {
+    "canonicalKey":{"type":"string","pattern":"^[a-z0-9-]+$"},
+    "labels":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["language","name","slug","aliases"],"properties":{"language":{"type":"string"},"name":{"type":"string"},"slug":{"type":"string"},"aliases":{"type":"array","items":{"type":"string"},"uniqueItems":true}}}},
+    "categoryKey":{"type":"string"},"parentIngredientId":{"type":["string","null"]}
+  }
+}

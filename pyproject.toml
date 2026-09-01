@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cook-all-data-foundation"
+version = "0.1.0"
+description = "Phase 0 recipe data contracts, source adapters, normalization and audit tooling"
+requires-python = ">=3.11"
+
+[project.scripts]
+cookall-data = "cookall_data.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]

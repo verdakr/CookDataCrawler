@@ -1,0 +1,54 @@
+[
+  {
+    "run_id": "3e7d87e1-c240-4547-8d8d-3b65eaf9a40f",
+    "source_key": "themealdb_api",
+    "started_at": "2026-09-01T13:57:39.063181Z",
+    "finished_at": "2026-09-01T13:57:39.861619Z",
+    "normalization_version": "ingredient-rules@1.0.0",
+    "read_count": 50,
+    "inserted_count": 50,
+    "updated_count": 0,
+    "unchanged_count": 0,
+    "rejected_count": 0,
+    "error_summary_json": "[]"
+  },
+  {
+    "run_id": "30499866-fb27-49fa-8948-1b3f3ac6e476",
+    "source_key": "themealdb_api",
+    "started_at": "2026-09-01T14:27:19.558834Z",
+    "finished_at": "2026-09-01T14:27:30.199947Z",
+    "normalization_version": "ingredient-rules@1.0.0",
+    "read_count": 500,
+    "inserted_count": 450,
+    "updated_count": 0,
+    "unchanged_count": 50,
+    "rejected_count": 0,
+    "error_summary_json": "[]"
+  },
+  {
+    "run_id": "f2906d01-c238-4e37-a831-61b67da8046c",
+    "source_key": "wikibooks_mediawiki",
+    "started_at": "2026-09-01T14:28:16.685829Z",
+    "finished_at": "2026-09-01T14:28:31.696156Z",
+    "normalization_version": "ingredient-rules@1.0.0",
+    "read_count": 391,
+    "inserted_count": 391,
+    "updated_count": 0,
+    "unchanged_count": 0,
+    "rejected_count": 0,
+    "error_summary_json": "[\"collection aborted: Could not fetch https://en.wikibooks.org/w/api.php?action=query&format=json&formatversion=2&prop=info%7Crevisions&inprop=url&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&generator=categorymembers&gcmtitle=Category%3ARecipes&gcmtype=page&gcmlimit=50&redirects=1&gcmcontinue=page%7C4255545445524d494c4b20435552525920534f555020284b4144492050414b4f5241290a4255545445524d494c4b20435552525920534f555020284b4144492050414b4f524129%7C192634 after 3 attempts: HTTP Error 429: Too Many Requests\"]"
+  },
+  {
+    "run_id": "f3cd9658-eef8-4ab9-a718-71a4adbf96ec",
+    "source_key": "wikibooks_mediawiki",
+    "started_at": "2026-09-01T14:29:00.746544Z",
+    "finished_at": "2026-09-01T14:29:14.233432Z",
+    "normalization_version": "ingredient-rules@1.0.0",
+    "read_count": 100,
+    "inserted_count": 0,
+    "updated_count": 0,
+    "unchanged_count": 100,
+    "rejected_count": 0,
+    "error_summary_json": "[]"
+  }
+]

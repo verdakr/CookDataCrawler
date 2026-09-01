@@ -1,0 +1,24 @@
+{
+  "$schema":"https://json-schema.org/draft/2020-12/schema",
+  "$id":"https://cookall.example/contracts/recipe.schema.json",
+  "title":"NormalizedRecipe",
+  "type":"object","additionalProperties":false,
+  "required":["schemaVersion","sourceRef","language","title","description","category","cuisine","tags","servings","times","instructions","ingredients","image","recipeGroupId","normalizationVersion","contentHash","attribution"],
+  "properties": {
+    "schemaVersion":{"const":"1.0.0"},
+    "sourceRef":{"type":"object","additionalProperties":false,"required":["sourceKey","sourceRecipeId","sourceContentHash"],"properties":{"sourceKey":{"type":"string"},"sourceRecipeId":{"type":"string"},"sourceContentHash":{"type":"string"}}},
+    "language":{"type":"string"},"title":{"type":"string","minLength":1},
+    "description":{"type":["string","null"]},"category":{"type":["string","null"]},"cuisine":{"type":["string","null"]},
+    "tags":{"type":"array","items":{"type":"string"},"uniqueItems":true},
+    "servings":{"type":["object","null"]},
+    "times":{"type":"object","additionalProperties":false,"required":["prepMinutes","cookMinutes","totalMinutes"],"properties":{"prepMinutes":{"type":["integer","null"],"minimum":0},"cookMinutes":{"type":["integer","null"],"minimum":0},"totalMinutes":{"type":["integer","null"],"minimum":0}}},
+    "instructions":{"type":"array","minItems":1,"items":{"type":"object","additionalProperties":false,"required":["position","text"],"properties":{"position":{"type":"integer","minimum":1},"text":{"type":"string","minLength":1}}}},
+    "ingredients":{"type":"array","minItems":1,"items":{"$ref":"ingredient-line.schema.json"}},
+    "image":{"oneOf":[{"type":"null"},{"$ref":"#/$defs/image"}]},
+    "recipeGroupId":{"type":["string","null"]},
+    "normalizationVersion":{"type":"string"},"contentHash":{"type":"string","pattern":"^sha256:[a-f0-9]{64}$"},
+    "attribution":{"type":"object"}
+  },
+  "$defs":{"image":{"type":"object","additionalProperties":true,"required":["url","sourceUrl","author","license","licenseUrl","displayAllowed","reason"],"properties":{"url":{"type":["string","null"]},"sourceUrl":{"type":["string","null"]},"author":{"type":["string","null"]},"license":{"type":["string","null"]},"licenseUrl":{"type":["string","null"]},"displayAllowed":{"type":"boolean"},"reason":{"type":["string","null"]}}}}
+}
+

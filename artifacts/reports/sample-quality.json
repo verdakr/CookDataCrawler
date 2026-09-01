@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-09-01T14:39:07.338311Z",
+  "groups": {
+    "themealdb_api:en": {
+      "recipeCount": 500,
+      "fieldFillRates": {
+        "title": 1.0,
+        "description": 0.0,
+        "category": 1.0,
+        "cuisine": 0.704,
+        "servings": 0.0,
+        "instructions": 1.0,
+        "ingredients": 1.0,
+        "image": 1.0,
+        "attribution": 1.0
+      },
+      "ingredientLineCount": 5105,
+      "ingredientNormalization": {
+        "unmatched": 1953,
+        "matched": 2997,
+        "ambiguous": 155
+      },
+      "parseRates": {
+        "servings": 0.0,
+        "anyTime": 0.0,
+        "category": 1.0
+      },
+      "attributionCoverageRate": 1.0,
+      "licensedDisplayableImageRate": 0.0,
+      "languageMatchesExpectedRate": 1.0
+    },
+    "wikibooks_mediawiki:en": {
+      "recipeCount": 391,
+      "fieldFillRates": {
+        "title": 1.0,
+        "description": 0.844,
+        "category": 0.9923,
+        "cuisine": 0.0,
+        "servings": 0.4962,
+        "instructions": 1.0,
+        "ingredients": 1.0,
+        "image": 0.0,
+        "attribution": 1.0
+      },
+      "ingredientLineCount": 3172,
+      "ingredientNormalization": {
+        "unmatched": 1275,
+        "matched": 1785,
+        "ambiguous": 112
+      },
+      "parseRates": {
+        "servings": 0.4962,
+        "anyTime": 0.399,
+        "category": 0.9923
+      },
+      "attributionCoverageRate": 1.0,
+      "licensedDisplayableImageRate": 0.0,
+      "languageMatchesExpectedRate": 1.0
+    }
+  },
+  "totalRecipes": 891
+}
