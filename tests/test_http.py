@@ -2,7 +2,7 @@ import unittest
 import urllib.error
 from unittest.mock import patch
 
-from cook_crawler.src.cookall_data.http import FetchError, HttpClient
+from cookall_data.http import FetchError, HttpClient
 
 
 class FakeResponse:

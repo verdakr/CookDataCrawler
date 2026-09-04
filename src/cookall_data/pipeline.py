@@ -43,7 +43,10 @@ def run_collection(adapter: Adapter, store: Phase0Store, limit: int) -> dict[str
         raise
     finally:
         store.finish_run(run_id, counts, errors)
-    return {"runId": run_id, "sourceKey": adapter.source_key, **counts, "errors": errors}
+    result = {"runId": run_id, "sourceKey": adapter.source_key, **counts, "errors": errors}
+    if hasattr(adapter, "source_exhausted"):
+        result["sourceExhausted"] = bool(adapter.source_exhausted)
+    return result
 
 
 def reprocess_records(store: Phase0Store, adapters: dict[str, Any]) -> dict[str, int]:

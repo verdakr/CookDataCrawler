@@ -1,6 +1,6 @@
 import unittest
 
-from cook_crawler.src.cookall_data.normalization import IngredientDictionary, normalize_ingredient
+from cookall_data.normalization import IngredientDictionary, normalize_ingredient
 
 
 class NormalizationTests(unittest.TestCase):

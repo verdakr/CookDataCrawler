@@ -36,7 +36,10 @@ INGREDIENT_HEADINGS = {
 }
 INSTRUCTION_HEADINGS = {
     "en": ("procedure", "directions", "instructions", "method", "preparation"),
-    "tr": ("hazırlanışı", "yapılışı", "tarifi", "hazırlama"),
+    "tr": (
+        "hazırlanış", "hazırlanması", "hazırlama", "yapılış", "yapılacaklar",
+        "pişirilmesi", "tarif",
+    ),
 }
 
 
@@ -64,6 +67,7 @@ class WikibooksAdapter:
         self.skip_source_recipe_ids = skip_source_recipe_ids or set()
         self.checkpoint_callback = checkpoint_callback
         self.exhausted = exhausted
+        self.source_exhausted = exhausted
 
     @property
     def checkpoint_key(self) -> str:
@@ -111,6 +115,7 @@ class WikibooksAdapter:
                 emitted += 1
                 yield source, recipe
             continuation = payload.get("continue", {}).get(continuation_key)
+            self.source_exhausted = continuation is None
             if self.checkpoint_callback:
                 self.checkpoint_callback(continuation, continuation is None)
             if not continuation:
@@ -150,11 +155,26 @@ class WikibooksAdapter:
 
     @staticmethod
     def _sections(wikitext: str) -> dict[str, str]:
+        # Older Turkish Cookbook pages often use bold lines instead of section headings.
+        recognized = (*INGREDIENT_HEADINGS["tr"], *INSTRUCTION_HEADINGS["tr"])
+
+        def bold_to_heading(match: re.Match[str]) -> str:
+            heading = clean_text(match.group(1))
+            key = WikibooksAdapter._heading_key(heading)
+            if any(WikibooksAdapter._heading_key(choice) in key for choice in recognized):
+                return f"=={heading}=="
+            return match.group(0)
+
+        wikitext = re.sub(r"^\s*'{3}\s*(.*?)\s*'{3}\s*$", bold_to_heading, wikitext, flags=re.MULTILINE)
         parts = re.split(r"^\s*={2,6}\s*(.*?)\s*={2,6}\s*$", wikitext, flags=re.MULTILINE)
         sections: dict[str, str] = {"": parts[0] if parts else ""}
         for index in range(1, len(parts) - 1, 2):
-            sections[clean_text(parts[index]).casefold()] = parts[index + 1]
+            sections[WikibooksAdapter._heading_key(parts[index])] = parts[index + 1]
         return sections
+
+    @staticmethod
+    def _heading_key(value: str) -> str:
+        return clean_text(value).casefold().translate(str.maketrans("çğıöşü", "cgiosu"))
 
     @staticmethod
     def _plain(value: str) -> str:
@@ -170,7 +190,7 @@ class WikibooksAdapter:
 
     def _section(self, sections: dict[str, str], choices: tuple[str, ...]) -> str:
         for heading, body in sections.items():
-            if any(choice in heading for choice in choices):
+            if any(self._heading_key(choice) in heading for choice in choices):
                 return body
         return ""
 

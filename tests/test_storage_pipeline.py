@@ -3,11 +3,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cook_crawler.src.cookall_data.adapters.themealdb import TheMealDBAdapter
-from cook_crawler.src.cookall_data.dedup import find_duplicate_candidates
-from cook_crawler.src.cookall_data.normalization import IngredientDictionary
-from cook_crawler.src.cookall_data.pipeline import run_collection
-from cook_crawler.src.cookall_data.storage import Phase0Store
+from cookall_data.adapters.themealdb import TheMealDBAdapter
+from cookall_data.dedup import find_duplicate_candidates
+from cookall_data.normalization import IngredientDictionary
+from cookall_data.pipeline import run_collection
+from cookall_data.storage import Phase0Store
 
 
 class FakeAdapter:
@@ -49,7 +49,7 @@ class StoragePipelineTests(unittest.TestCase):
         run_collection(FakeAdapter(self.source, self.recipe, self.dictionary), self.store, 1)
         changed = copy.deepcopy(self.source)
         changed["rawPayload"]["strMeal"] = "Changed Soup"
-        from cook_crawler.src.cookall_data.util import content_hash
+        from cookall_data.util import content_hash
         changed["contentHash"] = content_hash(changed["rawPayload"])
         changed["revision"] = "2"
         changed_recipe = copy.deepcopy(self.recipe)

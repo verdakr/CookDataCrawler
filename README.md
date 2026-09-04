@@ -29,7 +29,9 @@ PYTHONPATH=src python3 -m cookall_data.cli collect --source wikibooks-en --limit
 Resume modu mevcut source ID'lerini atlar, MediaWiki devam imlecini
 `collection_checkpoints` tablosunda tutar ve `--limit` değerini "istenen yeni tarif"
 olarak yorumlar. İşlem 429 veya bağlantı hatasıyla kesilirse aynı komut son tamamlanan
-API sayfasından devam eder. Kaynak baştan yeniden taranacaksa (örneğin son taramadan
+API sayfasından devam eder. Çıktıdaki `sourceExhausted=true`, API'nin sonuna
+ulaşıldığını ve o taramada istenen sayıda yeni uygun tarif bulunamayabileceğini
+gösterir; hata anlamına gelmez. Kaynak baştan yeniden taranacaksa (örneğin son taramadan
 sonra alfabetik olarak araya yeni sayfalar eklendiyse):
 
 ```bash

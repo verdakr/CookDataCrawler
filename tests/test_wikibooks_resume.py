@@ -1,7 +1,7 @@
 import unittest
 
-from cook_crawler.src.cookall_data.adapters.wikibooks import WikibooksAdapter
-from cook_crawler.src.cookall_data.normalization import IngredientDictionary
+from cookall_data.adapters.wikibooks import WikibooksAdapter
+from cookall_data.normalization import IngredientDictionary
 
 
 def page(page_id):
@@ -46,6 +46,7 @@ class WikibooksResumeTests(unittest.TestCase):
         self.assertEqual(client.second_params["gcmcontinue"], "cursor-2")
         self.assertEqual(checkpoints, [("cursor-2", False), (None, True)])
         self.assertEqual(client.first_params["maxlag"], 5)
+        self.assertTrue(adapter.source_exhausted)
 
 
 if __name__ == "__main__":

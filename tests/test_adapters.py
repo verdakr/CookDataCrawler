@@ -1,9 +1,9 @@
 import unittest
 
-from cook_crawler.src.cookall_data.adapters.themealdb import TheMealDBAdapter
-from cook_crawler.src.cookall_data.adapters.wikibooks import WikibooksAdapter
-from cook_crawler.src.cookall_data.normalization import IngredientDictionary
-from cook_crawler.src.cookall_data.validation import ValidationError, validate_recipe, validate_source_record
+from cookall_data.adapters.themealdb import TheMealDBAdapter
+from cookall_data.adapters.wikibooks import WikibooksAdapter
+from cookall_data.normalization import IngredientDictionary
+from cookall_data.validation import ValidationError, validate_recipe, validate_source_record
 
 
 class NoNetworkClient:
@@ -53,7 +53,15 @@ class AdapterTests(unittest.TestCase):
         with self.assertRaises(ValidationError):
             validate_source_record({"sourceKey": "broken"})
 
+    def test_turkish_legacy_bold_and_yapilis_headings_are_recognized(self):
+        adapter = WikibooksAdapter("tr", NoNetworkClient(), self.dictionary)
+        bold = "'''MALZEME'''\n* 1 adet domates\n'''HAZIRLANIŞI'''\nDomatesi pişirin."
+        sections = adapter._sections(bold)
+        self.assertIn("malzeme", sections)
+        self.assertIn("hazirlanisi", sections)
+        modern = adapter._sections("== Malzemeler ==\n* Su\n== Yapılış aşamaları ==\n# Pişirin")
+        self.assertTrue(adapter._section(modern, ("yapılış",)))
+
 
 if __name__ == "__main__":
     unittest.main()
-
