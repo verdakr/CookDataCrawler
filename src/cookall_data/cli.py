@@ -1,24 +1,24 @@
 from __future__ import annotations
 
 import argparse
+import getpass
 import json
 import os
 from pathlib import Path
+
+from argon2 import PasswordHasher
 
 from .adapters import TheMealDBAdapter, WikibooksAdapter
 from .http import HttpClient
 from .normalization import IngredientDictionary
 from .pipeline import reprocess_records, run_collection
 from .reporting import write_reports
-from .storage import Phase0Store
-
-
-DEFAULT_DB = Path("artifacts/phase0.sqlite3")
+from .settings import Settings
+from .storage import MongoStore
 
 
 def parser() -> argparse.ArgumentParser:
-    root = argparse.ArgumentParser(description="Cook All Phase 0 data tooling")
-    root.add_argument("--db", type=Path, default=DEFAULT_DB)
+    root = argparse.ArgumentParser(description="Cook All MongoDB data tooling")
     commands = root.add_subparsers(dest="command", required=True)
     collect = commands.add_parser("collect", help="collect and normalize a bounded official-API sample")
     collect.add_argument("--source", required=True, choices=("themealdb", "wikibooks-en", "wikibooks-tr"))
@@ -29,13 +29,22 @@ def parser() -> argparse.ArgumentParser:
     report = commands.add_parser("report", help="write quality, dedup, license and manual-review reports")
     report.add_argument("--output", type=Path, default=Path("artifacts/reports"))
     commands.add_parser("reprocess", help="rerun current normalization rules from stored raw source records")
+    commands.add_parser("hash-password", help="generate an Argon2 ADMIN_PASSWORD_HASH")
     return root
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parser().parse_args(argv)
+    if args.command == "hash-password":
+        first = getpass.getpass("Admin password: ")
+        second = getpass.getpass("Repeat password: ")
+        if not first or first != second:
+            raise SystemExit("Passwords are empty or do not match")
+        print(PasswordHasher().hash(first))
+        return 0
+    settings = Settings.from_env(require_auth=False)
     dictionary = IngredientDictionary.load()
-    with Phase0Store(args.db) as store:
+    with MongoStore(settings.mongodb_uri, settings.db_name) as store:
         if args.command == "collect":
             if args.limit < 1:
                 raise SystemExit("--limit must be positive")

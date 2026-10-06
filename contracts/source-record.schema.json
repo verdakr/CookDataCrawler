@@ -7,7 +7,7 @@
   "required": ["schemaVersion","sourceKey","sourceRecipeId","sourceUrl","language","fetchedAt","rawPayload","contentHash","license","attribution"],
   "properties": {
     "schemaVersion": {"const":"1.0.0"},
-    "sourceKey": {"enum":["themealdb_api","wikibooks_mediawiki","recipe_commons"]},
+    "sourceKey": {"enum":["themealdb_api","wikibooks_mediawiki","recipe_commons","admin_manual"]},
     "sourceRecipeId": {"type":"string","minLength":1},
     "sourceUrl": {"type":"string","format":"uri"},
     "language": {"type":"string","pattern":"^[a-z]{2,3}(-[A-Z]{2})?$"},
@@ -31,4 +31,3 @@
     }
   }
 }
-

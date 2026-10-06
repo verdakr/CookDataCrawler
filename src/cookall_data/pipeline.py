@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Protocol
+from typing import Any, Callable, Protocol
 
 from .dedup import find_duplicate_candidates
 from .storage import Phase0Store
@@ -13,12 +13,24 @@ class Adapter(Protocol):
     def collect(self, limit: int): ...
 
 
-def run_collection(adapter: Adapter, store: Phase0Store, limit: int) -> dict[str, Any]:
+class CollectionCancelled(RuntimeError):
+    pass
+
+
+def run_collection(
+    adapter: Adapter,
+    store: Phase0Store,
+    limit: int,
+    on_event: Callable[[str, dict[str, Any]], None] | None = None,
+    should_cancel: Callable[[], bool] | None = None,
+) -> dict[str, Any]:
     counts = {"read": 0, "inserted": 0, "updated": 0, "unchanged": 0, "rejected": 0}
     errors: list[str] = []
     run_id = store.begin_run(adapter.source_key, adapter.dictionary.version)
     try:
         for source, recipe in adapter.collect(limit):
+            if should_cancel and should_cancel():
+                raise CollectionCancelled("Crawler işi kullanıcı tarafından durduruldu")
             counts["read"] += 1
             try:
                 validate_source_record(source)
@@ -31,6 +43,8 @@ def run_collection(adapter: Adapter, store: Phase0Store, limit: int) -> dict[str
                         fingerprint = f"ingredient:{source['sourceKey']}:{source['sourceRecipeId']}:{position}:{item['ruleVersion']}"
                         store.enqueue_review("ingredient_normalization", recipe["sourceRef"], fingerprint, {"position": position, "ingredient": item})
                 store.commit()
+                if on_event:
+                    on_event("progress", {"sourceRecipeId": source["sourceRecipeId"], "counts": dict(counts)})
             except (ValidationError, KeyError, TypeError, ValueError) as exc:
                 counts["rejected"] += 1
                 errors.append(f"{source.get('sourceRecipeId', 'unknown')}: {exc}")
@@ -51,7 +65,9 @@ def run_collection(adapter: Adapter, store: Phase0Store, limit: int) -> dict[str
 
 def reprocess_records(store: Phase0Store, adapters: dict[str, Any]) -> dict[str, int]:
     counts = {"read": 0, "updated": 0, "rejected": 0}
-    store.connection.execute("UPDATE review_queue SET status='superseded' WHERE review_type='ingredient_normalization'")
+    store.db.reviewQueue.update_many(
+        {"reviewType": "ingredient_normalization"}, {"$set": {"status": "superseded"}}
+    )
     for source in store.source_records():
         adapter_key = source["sourceKey"] if source["sourceKey"] != "wikibooks_mediawiki" else f"wikibooks_mediawiki:{source['language']}"
         adapter = adapters.get(adapter_key)

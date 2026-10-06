@@ -88,8 +88,8 @@ def write_reports(store: Phase0Store, output_dir: str | Path) -> dict[str, Path]
                 positions[language] += 1
                 writer.writerow([recipe["sourceRef"]["sourceKey"], recipe["sourceRef"]["sourceRecipeId"], recipe["language"], recipe["title"], item["originalText"], item["quantity"]["min"], item["quantity"]["max"], item["unit"], item["unitStatus"], item["ingredientId"], item["variant"], item["normalizationStatus"], item["confidence"], item["reviewRequired"], "", ""])
                 written += 1
-    revision_count = store.connection.execute("SELECT count(*) FROM source_revisions").fetchone()[0]
-    review_count = store.connection.execute("SELECT count(*) FROM review_queue WHERE status='pending'").fetchone()[0]
+    revision_count = store.db.sourceRevisions.count_documents({})
+    review_count = store.db.reviewQueue.count_documents({"status": "pending"})
     lines = [
         "# Phase 0 örneklem özeti", "", f"Üretim: `{quality['generatedAt']}`", "",
         f"Toplam normalize tarif / sourceRecord: **{quality['totalRecipes']} / {len(sources)}**",

@@ -1,13 +1,13 @@
 import copy
-import tempfile
 import unittest
-from pathlib import Path
+import uuid
 
 from cookall_data.adapters.themealdb import TheMealDBAdapter
 from cookall_data.dedup import find_duplicate_candidates
 from cookall_data.normalization import IngredientDictionary
 from cookall_data.pipeline import run_collection
-from cookall_data.storage import Phase0Store
+from cookall_data.settings import Settings
+from cookall_data.storage import MongoStore
 
 
 class FakeAdapter:
@@ -24,8 +24,10 @@ class FakeAdapter:
 
 class StoragePipelineTests(unittest.TestCase):
     def setUp(self):
-        self.temp = tempfile.TemporaryDirectory()
-        self.store = Phase0Store(Path(self.temp.name) / "test.sqlite3")
+        settings = Settings.from_env(require_auth=False)
+        self.db_name = f"ca_test_{uuid.uuid4().hex[:20]}"
+        self.store = MongoStore(settings.mongodb_uri, self.db_name)
+        self.store.ensure_indexes()
         self.dictionary = IngredientDictionary.load()
         adapter = TheMealDBAdapter(None, self.dictionary)
         meal = {"idMeal":"1","strMeal":"Tomato Soup","strInstructions":"Cook tomatoes.","strIngredient1":"tomatoes","strMeasure1":"2 cups","strMealThumb":"","strCategory":"Soup","strArea":"Turkish"}
@@ -33,8 +35,8 @@ class StoragePipelineTests(unittest.TestCase):
         self.recipe = adapter.to_recipe(self.source)
 
     def tearDown(self):
+        self.store.client.drop_database(self.db_name)
         self.store.close()
-        self.temp.cleanup()
 
     def test_second_run_is_idempotent(self):
         adapter = FakeAdapter(self.source, self.recipe, self.dictionary)
@@ -55,7 +57,7 @@ class StoragePipelineTests(unittest.TestCase):
         changed_recipe = copy.deepcopy(self.recipe)
         changed_recipe["title"] = "Changed Soup"
         result = run_collection(FakeAdapter(changed, changed_recipe, self.dictionary), self.store, 1)
-        revision_count = self.store.connection.execute("SELECT count(*) FROM source_revisions").fetchone()[0]
+        revision_count = self.store.db.sourceRevisions.count_documents({})
         self.assertEqual(result["updated"], 1)
         self.assertEqual(revision_count, 1)
 
@@ -71,12 +73,12 @@ class StoragePipelineTests(unittest.TestCase):
     def test_reopened_review_updates_status_and_details(self):
         ref = self.recipe["sourceRef"]
         self.store.enqueue_review("ingredient_normalization", ref, "same", {"value": "old"})
-        self.store.connection.execute("UPDATE review_queue SET status='superseded' WHERE fingerprint='same'")
+        self.store.db.reviewQueue.update_one({"fingerprint": "same"}, {"$set": {"status": "superseded"}})
         self.store.enqueue_review("ingredient_normalization", ref, "same", {"value": "new"})
         self.store.commit()
-        row = self.store.connection.execute("SELECT status, details_json FROM review_queue WHERE fingerprint='same'").fetchone()
+        row = self.store.db.reviewQueue.find_one({"fingerprint": "same"})
         self.assertEqual(row["status"], "pending")
-        self.assertIn("new", row["details_json"])
+        self.assertEqual(row["details"]["value"], "new")
 
     def test_collection_checkpoint_round_trip(self):
         self.assertIsNone(self.store.checkpoint("wikibooks_mediawiki:en"))

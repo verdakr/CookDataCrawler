@@ -9,3 +9,5 @@ dist/
 artifacts/raw/
 artifacts/phase0.sqlite3
 
+.env
+artifacts/backups/
