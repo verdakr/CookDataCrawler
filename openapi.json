@@ -583,6 +583,68 @@
         }
       }
     },
+    "/api/recipes/{source_key}/{source_recipe_id}/revisions": {
+      "get": {
+        "summary": "Recipe Revisions",
+        "operationId": "recipe_revisions_api_recipes__source_key___source_recipe_id__revisions_get",
+        "parameters": [
+          {
+            "name": "source_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Key"
+            }
+          },
+          {
+            "name": "source_recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Recipe Id"
+            }
+          },
+          {
+            "name": "cookall_admin",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cookall Admin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/recipes/{source_key}/{source_recipe_id}/restore": {
       "post": {
         "summary": "Restore Recipe",

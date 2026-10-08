@@ -1,54 +1,199 @@
 [
   {
-    "run_id": "3e7d87e1-c240-4547-8d8d-3b65eaf9a40f",
-    "source_key": "themealdb_api",
-    "started_at": "2026-09-01T13:57:39.063181Z",
-    "finished_at": "2026-09-01T13:57:39.861619Z",
-    "normalization_version": "ingredient-rules@1.0.0",
-    "read_count": 50,
-    "inserted_count": 50,
-    "updated_count": 0,
-    "unchanged_count": 0,
-    "rejected_count": 0,
-    "error_summary_json": "[]"
+    "runId": "5b76d62b-0507-4329-a2d1-5986527b89a6",
+    "sourceKey": "themealdb_api",
+    "startedAt": "2026-09-25T15:13:18.345935Z",
+    "finishedAt": "2026-09-25T15:13:52.352898Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
   },
   {
-    "run_id": "30499866-fb27-49fa-8948-1b3f3ac6e476",
-    "source_key": "themealdb_api",
-    "started_at": "2026-09-01T14:27:19.558834Z",
-    "finished_at": "2026-09-01T14:27:30.199947Z",
-    "normalization_version": "ingredient-rules@1.0.0",
-    "read_count": 500,
-    "inserted_count": 450,
-    "updated_count": 0,
-    "unchanged_count": 50,
-    "rejected_count": 0,
-    "error_summary_json": "[]"
+    "runId": "28f4b3b9-afe2-4052-b08a-71e3f0ad4875",
+    "sourceKey": "themealdb_api",
+    "startedAt": "2026-09-25T15:15:01.719763Z",
+    "finishedAt": "2026-09-25T15:15:25.572189Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 40,
+      "inserted": 0,
+      "updated": 0,
+      "unchanged": 40,
+      "rejected": 0
+    },
+    "errors": [
+      "collection aborted: Crawler işi kullanıcı tarafından durduruldu"
+    ]
   },
   {
-    "run_id": "f2906d01-c238-4e37-a831-61b67da8046c",
-    "source_key": "wikibooks_mediawiki",
-    "started_at": "2026-09-01T14:28:16.685829Z",
-    "finished_at": "2026-09-01T14:28:31.696156Z",
-    "normalization_version": "ingredient-rules@1.0.0",
-    "read_count": 391,
-    "inserted_count": 391,
-    "updated_count": 0,
-    "unchanged_count": 0,
-    "rejected_count": 0,
-    "error_summary_json": "[\"collection aborted: Could not fetch https://en.wikibooks.org/w/api.php?action=query&format=json&formatversion=2&prop=info%7Crevisions&inprop=url&rvprop=ids%7Ctimestamp%7Ccontent&rvslots=main&generator=categorymembers&gcmtitle=Category%3ARecipes&gcmtype=page&gcmlimit=50&redirects=1&gcmcontinue=page%7C4255545445524d494c4b20435552525920534f555020284b4144492050414b4f5241290a4255545445524d494c4b20435552525920534f555020284b4144492050414b4f524129%7C192634 after 3 attempts: HTTP Error 429: Too Many Requests\"]"
+    "runId": "4cb7e700-573c-49c6-80fb-b972ef3b7566",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-09-25T15:15:50.130431Z",
+    "finishedAt": "2026-09-25T15:16:21.029254Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
   },
   {
-    "run_id": "f3cd9658-eef8-4ab9-a718-71a4adbf96ec",
-    "source_key": "wikibooks_mediawiki",
-    "started_at": "2026-09-01T14:29:00.746544Z",
-    "finished_at": "2026-09-01T14:29:14.233432Z",
-    "normalization_version": "ingredient-rules@1.0.0",
-    "read_count": 100,
-    "inserted_count": 0,
-    "updated_count": 0,
-    "unchanged_count": 100,
-    "rejected_count": 0,
-    "error_summary_json": "[]"
+    "runId": "132f636f-ce22-42d0-b282-f5529b2225c1",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-09-25T15:16:27.328335Z",
+    "finishedAt": "2026-09-25T15:17:01.748684Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "72082b37-e9c3-4d3f-949b-701717dce9dc",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-09-25T15:17:33.556013Z",
+    "finishedAt": "2026-09-25T15:18:26.938510Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "9408866a-e6a3-4b91-8720-a7a9edc13781",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-09-25T15:22:28.896366Z",
+    "finishedAt": "2026-09-25T15:23:02.949017Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "d2869e9c-6b6f-44c9-8ef5-4d44c2ca9838",
+    "sourceKey": "themealdb_api",
+    "startedAt": "2026-10-08T12:23:08.843572Z",
+    "finishedAt": "2026-10-08T12:23:43.713185Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 55,
+      "inserted": 5,
+      "updated": 0,
+      "unchanged": 50,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "f7cffb23-5019-40b8-9ec8-2c58acee1464",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-10-08T12:36:06.961474Z",
+    "finishedAt": "2026-10-08T12:36:38.791712Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "ab6c7434-9cf2-4525-b4da-92061349c7ad",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-10-08T12:36:53.175330Z",
+    "finishedAt": "2026-10-08T12:37:30.659371Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 50,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "4625f64b-665f-4b37-8b65-52e3c7e6e4e7",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-10-08T12:37:36.931704Z",
+    "finishedAt": "2026-10-08T12:37:48.065919Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 20,
+      "inserted": 20,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "7d082e79-be2f-4e45-a18e-24e0b068e91a",
+    "sourceKey": "themealdb_api",
+    "startedAt": "2026-10-08T12:37:48.513881Z",
+    "finishedAt": "2026-10-08T12:38:16.275291Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 0,
+      "updated": 0,
+      "unchanged": 50,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "29abe273-4d53-4a63-b7cc-63e1e58cd09a",
+    "sourceKey": "wikibooks_mediawiki",
+    "startedAt": "2026-10-08T12:38:16.958494Z",
+    "finishedAt": "2026-10-08T12:38:18.188593Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 0,
+      "inserted": 0,
+      "updated": 0,
+      "unchanged": 0,
+      "rejected": 0
+    },
+    "errors": []
+  },
+  {
+    "runId": "c9eaeb68-28a1-4f0e-ac93-f7dbd405f901",
+    "sourceKey": "themealdb_api",
+    "startedAt": "2026-10-08T12:38:23.578665Z",
+    "finishedAt": "2026-10-08T12:38:58.360852Z",
+    "normalizationVersion": "ingredient-rules@1.0.0",
+    "counts": {
+      "read": 50,
+      "inserted": 0,
+      "updated": 0,
+      "unchanged": 50,
+      "rejected": 0
+    },
+    "errors": []
   }
 ]

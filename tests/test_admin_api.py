@@ -113,6 +113,12 @@ class AdminApiTests(unittest.TestCase):
             ),
             1,
         )
+        revisions = self.client.get(path + "/revisions")
+        self.assertEqual(revisions.status_code, 200, revisions.text)
+        self.assertEqual(revisions.json()["changeCount"], 1)
+        self.assertEqual(revisions.json()["items"][0]["kind"], "current")
+        self.assertEqual(revisions.json()["items"][0]["payload"]["title"], "Updated Wikibooks Test")
+        self.assertEqual(revisions.json()["items"][1]["payload"]["title"], "Wikibooks Test")
 
     def test_admin_read_endpoints_are_available(self):
         self.login()

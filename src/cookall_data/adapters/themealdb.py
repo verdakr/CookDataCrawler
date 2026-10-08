@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import re
-import string
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, Callable
 
 from ..http import HttpClient
 from ..normalization import IngredientDictionary, normalize_ingredient
@@ -15,23 +14,53 @@ class TheMealDBAdapter:
     source_key = "themealdb_api"
     base_url = "https://www.themealdb.com/api/json/v1/1"
 
-    def __init__(self, client: HttpClient, dictionary: IngredientDictionary) -> None:
+    letters = "abcdefghijklmnopqrstuvwxyz"
+
+    def __init__(
+        self,
+        client: HttpClient,
+        dictionary: IngredientDictionary,
+        *,
+        start_letter: str | None = None,
+        skip_source_recipe_ids: set[str] | None = None,
+        checkpoint_callback: Callable[[str | None, bool], None] | None = None,
+    ) -> None:
         self.client = client
         self.dictionary = dictionary
+        self.start_letter = start_letter
+        self.skip_source_recipe_ids = skip_source_recipe_ids or set()
+        self.checkpoint_callback = checkpoint_callback
+        self.source_exhausted = False
+
+    @property
+    def checkpoint_key(self) -> str:
+        return self.source_key
 
     def collect(self, limit: int) -> Iterator[tuple[dict[str, Any], dict[str, Any]]]:
         seen: set[str] = set()
-        for letter in string.ascii_lowercase:
+        emitted = 0
+        start_index = self.letters.index(self.start_letter) if self.start_letter and self.start_letter in self.letters else 0
+        for index in range(start_index, len(self.letters)):
+            letter = self.letters[index]
             payload = self.client.get_json(f"{self.base_url}/search.php", {"f": letter})
             for meal in payload.get("meals") or []:
                 meal_id = str(meal.get("idMeal", ""))
                 if not meal_id or meal_id in seen:
                     continue
                 seen.add(meal_id)
+                if meal_id in self.skip_source_recipe_ids:
+                    continue
                 source = self.to_source_record(meal)
                 yield source, self.to_recipe(source)
-                if len(seen) >= limit:
+                emitted += 1
+                if emitted >= limit:
+                    if self.checkpoint_callback:
+                        self.checkpoint_callback(letter, False)
                     return
+            next_letter = self.letters[index + 1] if index + 1 < len(self.letters) else None
+            self.source_exhausted = next_letter is None
+            if self.checkpoint_callback:
+                self.checkpoint_callback(next_letter, self.source_exhausted)
 
     def to_source_record(self, meal: dict[str, Any]) -> dict[str, Any]:
         meal_id = str(meal["idMeal"])

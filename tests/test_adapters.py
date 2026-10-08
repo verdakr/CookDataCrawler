@@ -11,6 +11,19 @@ class NoNetworkClient:
         raise AssertionError("network not expected")
 
 
+class MealSearchClient:
+    def __init__(self):
+        self.letters = []
+
+    def get_json(self, _url, params):
+        self.letters.append(params["f"])
+        meals = {
+            "b": [{"idMeal": "1", "strMeal": "Old meal"}, {"idMeal": "2", "strMeal": "New meal"}],
+            "c": [{"idMeal": "3", "strMeal": "Newest meal"}],
+        }
+        return {"meals": meals.get(params["f"])}
+
+
 class AdapterTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -31,6 +44,33 @@ class AdapterTests(unittest.TestCase):
         self.assertEqual(recipe["ingredients"][0]["ingredientId"], "tomato")
         self.assertFalse(recipe["image"]["displayAllowed"])
         self.assertEqual(len(recipe["instructions"]), 2)
+
+    def test_themealdb_resumes_and_skips_existing_meals(self):
+        client = MealSearchClient()
+        checkpoints = []
+        adapter = TheMealDBAdapter(
+            client,
+            self.dictionary,
+            start_letter="b",
+            skip_source_recipe_ids={"1"},
+            checkpoint_callback=lambda continuation, exhausted: checkpoints.append((continuation, exhausted)),
+        )
+
+        collected = list(adapter.collect(2))
+
+        self.assertEqual([source["sourceRecipeId"] for source, _ in collected], ["2", "3"])
+        self.assertEqual(client.letters, ["b", "c"])
+        self.assertEqual(checkpoints[-1], ("c", False))
+
+    def test_themealdb_starts_from_first_letter_without_checkpoint(self):
+        client = MealSearchClient()
+        adapter = TheMealDBAdapter(client, self.dictionary, skip_source_recipe_ids={"1", "2", "3"})
+
+        collected = list(adapter.collect(1))
+
+        self.assertEqual(collected, [])
+        self.assertEqual(client.letters[0], "a")
+        self.assertTrue(adapter.source_exhausted)
 
     def test_wikibooks_revision_and_attribution_are_preserved(self):
         adapter = WikibooksAdapter("tr", NoNetworkClient(), self.dictionary)

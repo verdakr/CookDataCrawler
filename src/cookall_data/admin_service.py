@@ -136,6 +136,27 @@ class RecipeService:
             return None
         return {**row["payload"], "archivedAt": row.get("archivedAt"), "createdAt": row.get("createdAt"), "updatedAt": row.get("updatedAt")}
 
+    def revisions(self, source_key: str, source_recipe_id: str) -> list[dict[str, Any]] | None:
+        key = {"sourceKey": source_key, "sourceRecipeId": source_recipe_id}
+        current = self.store.db.recipes.find_one(key)
+        if not current:
+            return None
+        history = list(self.store.db.recipeRevisions.find(key).sort("createdAt", DESCENDING))
+        versions = [{
+            "id": "current",
+            "kind": "current",
+            "createdAt": current.get("updatedAt") or current.get("createdAt"),
+            "payload": current["payload"],
+        }]
+        versions.extend({
+            "id": str(row["_id"]),
+            "kind": "revision",
+            "createdAt": row.get("createdAt"),
+            "reason": row.get("reason"),
+            "payload": row["payload"],
+        } for row in history)
+        return versions
+
     def create(self, data: RecipeInput) -> dict[str, Any]:
         recipe_id = str(uuid.uuid4())
         raw = data.model_dump(mode="json")

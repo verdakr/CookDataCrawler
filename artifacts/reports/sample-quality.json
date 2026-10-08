@@ -1,24 +1,24 @@
 {
-  "generatedAt": "2026-09-01T14:39:07.338311Z",
+  "generatedAt": "2026-10-08T12:41:15.533400Z",
   "groups": {
     "themealdb_api:en": {
-      "recipeCount": 500,
+      "recipeCount": 55,
       "fieldFillRates": {
         "title": 1.0,
         "description": 0.0,
         "category": 1.0,
-        "cuisine": 0.704,
+        "cuisine": 0.6,
         "servings": 0.0,
         "instructions": 1.0,
         "ingredients": 1.0,
         "image": 1.0,
         "attribution": 1.0
       },
-      "ingredientLineCount": 5105,
+      "ingredientLineCount": 492,
       "ingredientNormalization": {
-        "unmatched": 1953,
-        "matched": 2997,
-        "ambiguous": 155
+        "matched": 283,
+        "unmatched": 194,
+        "ambiguous": 15
       },
       "parseRates": {
         "servings": 0.0,
@@ -30,33 +30,61 @@
       "languageMatchesExpectedRate": 1.0
     },
     "wikibooks_mediawiki:en": {
-      "recipeCount": 391,
+      "recipeCount": 150,
       "fieldFillRates": {
         "title": 1.0,
-        "description": 0.844,
-        "category": 0.9923,
+        "description": 0.8867,
+        "category": 0.9933,
         "cuisine": 0.0,
-        "servings": 0.4962,
+        "servings": 0.48,
         "instructions": 1.0,
         "ingredients": 1.0,
         "image": 0.0,
         "attribution": 1.0
       },
-      "ingredientLineCount": 3172,
+      "ingredientLineCount": 1161,
       "ingredientNormalization": {
-        "unmatched": 1275,
-        "matched": 1785,
-        "ambiguous": 112
+        "unmatched": 494,
+        "matched": 634,
+        "ambiguous": 33
       },
       "parseRates": {
-        "servings": 0.4962,
-        "anyTime": 0.399,
-        "category": 0.9923
+        "servings": 0.48,
+        "anyTime": 0.4333,
+        "category": 0.9933
+      },
+      "attributionCoverageRate": 1.0,
+      "licensedDisplayableImageRate": 0.0,
+      "languageMatchesExpectedRate": 1.0
+    },
+    "wikibooks_mediawiki:tr": {
+      "recipeCount": 170,
+      "fieldFillRates": {
+        "title": 1.0,
+        "description": 0.1412,
+        "category": 0.9412,
+        "cuisine": 0.0,
+        "servings": 0.1412,
+        "instructions": 1.0,
+        "ingredients": 1.0,
+        "image": 0.0,
+        "attribution": 1.0
+      },
+      "ingredientLineCount": 1215,
+      "ingredientNormalization": {
+        "unmatched": 495,
+        "matched": 718,
+        "ambiguous": 2
+      },
+      "parseRates": {
+        "servings": 0.1412,
+        "anyTime": 0.1118,
+        "category": 0.9412
       },
       "attributionCoverageRate": 1.0,
       "licensedDisplayableImageRate": 0.0,
       "languageMatchesExpectedRate": 1.0
     }
   },
-  "totalRecipes": 891
+  "totalRecipes": 375
 }

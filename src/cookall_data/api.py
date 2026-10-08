@@ -226,6 +226,14 @@ def update_recipe(source_key: str, source_recipe_id: str, data: RecipeInput, req
     return result
 
 
+@app.get("/api/recipes/{source_key}/{source_recipe_id}/revisions")
+def recipe_revisions(source_key: str, source_recipe_id: str, request: Request, _: Annotated[dict[str, Any], Depends(require_admin)]):
+    versions = RecipeService(_store(request)).revisions(source_key, source_recipe_id)
+    if versions is None:
+        raise HTTPException(status_code=404, detail="Tarif bulunamadı")
+    return {"items": versions, "changeCount": max(0, len(versions) - 1)}
+
+
 @app.delete("/api/recipes/{source_key}/{source_recipe_id}")
 def archive_recipe(source_key: str, source_recipe_id: str, request: Request, _: Annotated[dict[str, Any], Depends(require_mutation)]):
     if not RecipeService(_store(request)).set_archived(source_key, source_recipe_id, True):

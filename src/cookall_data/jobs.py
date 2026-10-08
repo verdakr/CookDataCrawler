@@ -117,7 +117,21 @@ class CrawlerWorker:
             else:
                 client = HttpClient(user_agent=self.user_agent)
                 if kind == "themealdb":
-                    adapter = TheMealDBAdapter(client, dictionary)
+                    checkpoint_key = "themealdb_api"
+                    checkpoint = self.store.checkpoint(checkpoint_key)
+                    # A completed alphabet scan starts again so newly added meals are found.
+                    if checkpoint and checkpoint["exhausted"]:
+                        self.store.clear_checkpoint(checkpoint_key)
+                        checkpoint = None
+                    adapter = TheMealDBAdapter(
+                        client,
+                        dictionary,
+                        start_letter=checkpoint["continuation"] if checkpoint else None,
+                        skip_source_recipe_ids=self.store.source_ids("themealdb_api"),
+                        checkpoint_callback=lambda continuation, exhausted: self.store.save_checkpoint(
+                            checkpoint_key, continuation, exhausted
+                        ),
+                    )
                 else:
                     language = kind.rsplit("-", 1)[1]
                     checkpoint_key = f"wikibooks_mediawiki:{language}"
