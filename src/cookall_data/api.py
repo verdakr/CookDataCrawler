@@ -1,12 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import json
 import os
 import secrets
 import threading
 import time
-from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -19,7 +19,7 @@ from fastapi import Cookie, Depends, FastAPI, File, Header, HTTPException, Query
 from fastapi.responses import FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 
-from .admin_service import Page, RecipeInput, RecipeService, page_collection
+from .admin_service import BulkPublicationInput, BulkPublicationResult, Page, PublicationInput, PublicationStatus, RecipeInput, RecipeService, page_collection
 from .backup import BackupError, BackupService
 from .jobs import JobService, CrawlerWorker
 from .settings import Settings
@@ -30,7 +30,6 @@ from .util import utc_now
 COOKIE_NAME = "cookall_admin"
 SESSION_SECONDS = 8 * 60 * 60
 password_hasher = PasswordHasher()
-login_attempts: dict[str, deque[float]] = defaultdict(deque)
 
 
 class LoginInput(BaseModel):
@@ -47,6 +46,11 @@ class JobInput(BaseModel):
 
 class ReviewInput(BaseModel):
     status: Literal["pending", "approved", "rejected", "superseded"]
+
+
+class IngredientResolutionInput(BaseModel):
+    canonicalKey: str = Field(min_length=1, max_length=120)
+    alias: str = Field(min_length=1, max_length=180)
 
 
 def _settings(request: Request) -> Settings:
@@ -136,9 +140,10 @@ def login(data: LoginInput, request: Request, response: Response):
     settings = _settings(request)
     address = request.client.host if request.client else "unknown"
     now = time.time()
-    attempts = login_attempts[address]
-    while attempts and attempts[0] < now - 15 * 60:
-        attempts.popleft()
+    identity = hashlib.sha256(f"{settings.auth_secret}:{address}".encode()).hexdigest()
+    attempts_store = _store(request).db.loginAttempts
+    row = attempts_store.find_one({"identity": identity}) or {}
+    attempts = [value for value in row.get("attempts", []) if value >= now - 15 * 60]
     if len(attempts) >= 8:
         raise HTTPException(status_code=429, detail="Çok fazla giriş denemesi; daha sonra tekrar deneyin")
     valid = data.username == settings.admin_username
@@ -148,8 +153,13 @@ def login(data: LoginInput, request: Request, response: Response):
         valid = False
     if not valid:
         attempts.append(now)
+        attempts_store.update_one(
+            {"identity": identity},
+            {"$set": {"attempts": attempts, "updatedAt": utc_now()}},
+            upsert=True,
+        )
         raise HTTPException(status_code=401, detail="Kullanıcı adı veya parola hatalı")
-    attempts.clear()
+    attempts_store.delete_one({"identity": identity})
     csrf = secrets.token_urlsafe(32)
     token = jwt.encode(
         {"sub": settings.admin_username, "aud": "cook-admin", "csrf": csrf, "iat": int(now), "exp": int(now) + SESSION_SECONDS},
@@ -178,11 +188,30 @@ def dashboard(request: Request, _: Annotated[dict[str, Any], Depends(require_adm
     db = _store(request).db
     language = list(db.recipes.aggregate([{"$match": {"archivedAt": None}}, {"$group": {"_id": "$payload.language", "count": {"$sum": 1}}}, {"$sort": {"_id": 1}}]))
     source = list(db.recipes.aggregate([{"$match": {"archivedAt": None}}, {"$group": {"_id": "$sourceKey", "count": {"$sum": 1}}}, {"$sort": {"_id": 1}}]))
+    categories = list(db.recipes.aggregate([
+        {"$match": {"archivedAt": None, "payload.category": {"$nin": [None, ""]}}},
+        {"$group": {"_id": "$payload.category", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}, {"$limit": 8},
+    ]))
+    job_statuses = list(db.crawlerJobs.aggregate([
+        {"$group": {"_id": "$status", "count": {"$sum": 1}}}, {"$sort": {"_id": 1}},
+    ]))
     latest = [without_id(row) for row in db.crawlerJobs.find().sort("createdAt", -1).limit(5)]
     return {
-        "counts": {"recipes": db.recipes.count_documents({"archivedAt": None}), "archived": db.recipes.count_documents({"archivedAt": {"$ne": None}}), "sources": db.sourceRecords.count_documents({}), "pendingReviews": db.reviewQueue.count_documents({"status": "pending"})},
+        "counts": {
+            "recipes": db.recipes.count_documents({"archivedAt": None}),
+            "archived": db.recipes.count_documents({"archivedAt": {"$ne": None}}),
+            "sources": db.sourceRecords.count_documents({}),
+            "pendingReviews": db.reviewQueue.count_documents({"status": "pending"}),
+            "resolvedReviews": db.reviewQueue.count_documents({"status": {"$in": ["approved", "rejected"]}}),
+            "failedJobs": db.crawlerJobs.count_documents({"status": "failed"}),
+            "ingredientAliases": db.ingredientAliases.count_documents({}),
+        },
         "languages": [{"name": row["_id"], "count": row["count"]} for row in language],
-        "sources": [{"name": row["_id"], "count": row["count"]} for row in source], "latestJobs": latest,
+        "sources": [{"name": row["_id"], "count": row["count"]} for row in source],
+        "categories": [{"name": row["_id"], "count": row["count"]} for row in categories],
+        "jobStatuses": [{"name": row["_id"], "count": row["count"]} for row in job_statuses],
+        "latestJobs": latest,
     }
 
 
@@ -192,11 +221,12 @@ def recipes(
     page: int = Query(1, ge=1), page_size: int = Query(20, alias="pageSize", ge=1, le=100),
     search: str | None = Query(None, max_length=180), language: str | None = Query(None, max_length=2),
     source: str | None = Query(None, max_length=80), archived: bool = False,
+    publication_status: PublicationStatus | None = Query(None, alias="publicationStatus"),
 ):
     language = language or None
     if language not in (None, "tr", "en"):
         raise HTTPException(status_code=422, detail="Dil filtresi 'tr' veya 'en' olmalıdır")
-    return RecipeService(_store(request)).list(page, page_size, search, language, source, archived)
+    return RecipeService(_store(request)).list(page, page_size, search, language, source, archived, publication_status)
 
 
 @app.post("/api/recipes", status_code=201)
@@ -205,6 +235,11 @@ def create_recipe(data: RecipeInput, request: Request, _: Annotated[dict[str, An
         return RecipeService(_store(request)).create(data)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/api/recipes/bulk-publication", response_model=BulkPublicationResult)
+def set_recipes_publication(data: BulkPublicationInput, request: Request, _: Annotated[dict[str, Any], Depends(require_mutation)]):
+    return RecipeService(_store(request)).set_publication_bulk(data)
 
 
 @app.get("/api/recipes/{source_key}/{source_recipe_id}")
@@ -222,6 +257,17 @@ def update_recipe(source_key: str, source_recipe_id: str, data: RecipeInput, req
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
     if not result:
+        raise HTTPException(status_code=404, detail="Tarif bulunamadı")
+    return result
+
+
+@app.patch("/api/recipes/{source_key}/{source_recipe_id}/publication")
+def set_recipe_publication(source_key: str, source_recipe_id: str, data: PublicationInput, request: Request, _: Annotated[dict[str, Any], Depends(require_mutation)]):
+    try:
+        result = RecipeService(_store(request)).set_publication(source_key, source_recipe_id, data.status)
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
+    if result is None:
         raise HTTPException(status_code=404, detail="Tarif bulunamadı")
     return result
 
@@ -261,6 +307,32 @@ def source_revisions(source_key: str, source_recipe_id: str, request: Request, _
 @app.get("/api/reviews", response_model=Page)
 def reviews(request: Request, _: Annotated[dict[str, Any], Depends(require_admin)], page: int = Query(1, ge=1), page_size: int = Query(20, alias="pageSize", ge=1, le=100), review_status: str | None = Query(None, alias="status")):
     return page_collection(_store(request).db.reviewQueue, {"status": review_status} if review_status else {}, page, page_size, "createdAt")
+
+
+@app.get("/api/ingredients")
+def ingredients(
+    request: Request,
+    _: Annotated[dict[str, Any], Depends(require_admin)],
+    language: Literal["tr", "en"] = "tr",
+):
+    return {"items": _store(request).ingredient_dictionary().options(language)}
+
+
+@app.post("/api/reviews/{fingerprint}/resolve-ingredient")
+def resolve_ingredient_review(
+    fingerprint: str,
+    data: IngredientResolutionInput,
+    request: Request,
+    payload: Annotated[dict[str, Any], Depends(require_mutation)],
+):
+    try:
+        return RecipeService(_store(request)).resolve_ingredient_review(
+            fingerprint, data.canonicalKey, data.alias, payload["sub"],
+        )
+    except LookupError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=409, detail=str(exc)) from exc
 
 
 @app.patch("/api/reviews/{fingerprint}")

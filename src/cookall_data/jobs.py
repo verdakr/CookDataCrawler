@@ -7,7 +7,6 @@ from typing import Any
 
 from .adapters import TheMealDBAdapter, WikibooksAdapter
 from .http import HttpClient
-from .normalization import IngredientDictionary
 from .pipeline import CollectionCancelled, reprocess_records, run_collection
 from .reporting import write_reports
 from .storage import MongoStore, without_id
@@ -104,7 +103,7 @@ class CrawlerWorker:
         job_id, kind, options = job["jobId"], job["kind"], job["options"]
         self.jobs.event(job_id, "info", "İş çalışmaya başladı")
         try:
-            dictionary = IngredientDictionary.load()
+            dictionary = self.store.ingredient_dictionary()
             if kind == "report":
                 result = {name: str(path) for name, path in write_reports(self.store, "artifacts/reports").items()}
             elif kind == "reprocess":

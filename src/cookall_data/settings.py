@@ -33,12 +33,15 @@ class Settings:
             )
         if missing:
             raise RuntimeError(f"Missing required environment variables: {', '.join(sorted(set(missing)))}")
+        auth_secret = os.getenv("AUTH_SECRET", "development-only-change-me")
+        if require_auth and (len(auth_secret) < 32 or "replace" in auth_secret.casefold() or "change-me" in auth_secret.casefold()):
+            raise RuntimeError("AUTH_SECRET must be a strong random value with at least 32 characters")
         return cls(
             mongodb_uri=os.environ["MONGODB_URI"],
             db_name=os.environ["DB_NAME"],
             admin_username=os.getenv("ADMIN_USERNAME", "admin"),
             admin_password_hash=os.getenv("ADMIN_PASSWORD_HASH", ""),
-            auth_secret=os.getenv("AUTH_SECRET", "development-only-change-me"),
+            auth_secret=auth_secret,
             admin_origin=os.getenv("ADMIN_ORIGIN", "http://localhost:3000").rstrip("/"),
             cookie_secure=os.getenv("COOKIE_SECURE", "false").lower() == "true",
             backup_dir=Path(os.getenv("BACKUP_DIR", "artifacts/backups")),

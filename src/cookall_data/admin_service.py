@@ -20,6 +20,31 @@ class IngredientInput(BaseModel):
     text: str = Field(min_length=1, max_length=500)
 
 
+PublicationStatus = Literal["draft", "published", "archived"]
+
+
+class PublicationInput(BaseModel):
+    status: Literal["draft", "published"]
+
+
+class RecipeSelection(BaseModel):
+    sourceKey: str = Field(min_length=1, max_length=80)
+    sourceRecipeId: str = Field(min_length=1, max_length=500)
+
+
+class BulkPublicationInput(PublicationInput):
+    recipes: list[RecipeSelection] = Field(min_length=1, max_length=500)
+
+
+class BulkPublicationError(RecipeSelection):
+    reason: Literal["archived", "not_found"]
+
+
+class BulkPublicationResult(BaseModel):
+    updatedCount: int
+    errors: list[BulkPublicationError]
+
+
 class RecipeInput(BaseModel):
     title: str = Field(min_length=1, max_length=180)
     language: Literal["tr", "en"] = "tr"
@@ -69,8 +94,12 @@ def _validate_recipe(recipe: dict[str, Any]) -> None:
         raise ValueError(f"{location}: {error.message}")
 
 
-def _build_payload(data: RecipeInput, source_ref: dict[str, str]) -> dict[str, Any]:
-    dictionary = IngredientDictionary.load()
+def _build_payload(
+    data: RecipeInput,
+    source_ref: dict[str, str],
+    dictionary: IngredientDictionary | None = None,
+) -> dict[str, Any]:
+    dictionary = dictionary or IngredientDictionary.load()
     ingredients = [normalize_ingredient(clean_text(item.text), data.language, dictionary) for item in data.ingredients]
     steps = [clean_text(step) for step in data.instructions if clean_text(step)]
     if not steps:
@@ -115,8 +144,25 @@ class RecipeService:
     def __init__(self, store: MongoStore) -> None:
         self.store = store
 
-    def list(self, page: int, page_size: int, search: str | None, language: str | None, source: str | None, archived: bool) -> Page:
+    @staticmethod
+    def serialize(row: dict[str, Any]) -> dict[str, Any]:
+        status = "archived" if row.get("archivedAt") else row.get("publicationStatus", "draft")
+        return {
+            **row["payload"], "publicationStatus": status,
+            "archivedAt": row.get("archivedAt"), "createdAt": row.get("createdAt"),
+            "updatedAt": row.get("updatedAt"),
+        }
+
+    def list(self, page: int, page_size: int, search: str | None, language: str | None, source: str | None, archived: bool, publication_status: PublicationStatus | None = None) -> Page:
         query: dict[str, Any] = {"archivedAt": {"$ne": None} if archived else None}
+        if publication_status == "archived":
+            query["archivedAt"] = {"$ne": None}
+        elif publication_status:
+            query["archivedAt"] = None
+            if publication_status == "draft":
+                query["$or"] = [{"publicationStatus": "draft"}, {"publicationStatus": None}]
+            else:
+                query["publicationStatus"] = "published"
         if search:
             query["payload.title"] = {"$regex": re.escape(search), "$options": "i"}
         if language:
@@ -127,14 +173,14 @@ class RecipeService:
         cursor = self.store.db.recipes.find(query).sort("updatedAt", DESCENDING).skip((page - 1) * page_size).limit(page_size)
         items = []
         for row in cursor:
-            items.append({**row["payload"], "archivedAt": row.get("archivedAt"), "createdAt": row.get("createdAt"), "updatedAt": row.get("updatedAt")})
+            items.append(self.serialize(row))
         return Page(items=items, page=page, pageSize=page_size, total=total, pages=(total + page_size - 1) // page_size)
 
     def get(self, source_key: str, source_recipe_id: str) -> dict[str, Any] | None:
         row = self.store.db.recipes.find_one({"sourceKey": source_key, "sourceRecipeId": source_recipe_id})
         if not row:
             return None
-        return {**row["payload"], "archivedAt": row.get("archivedAt"), "createdAt": row.get("createdAt"), "updatedAt": row.get("updatedAt")}
+        return self.serialize(row)
 
     def revisions(self, source_key: str, source_recipe_id: str) -> list[dict[str, Any]] | None:
         key = {"sourceKey": source_key, "sourceRecipeId": source_recipe_id}
@@ -167,29 +213,116 @@ class RecipeService:
             license_data={"name": "Cook All editorial", "url": "https://cookall.local/terms", "scope": "manual recipe", "verified": True, "verifiedAt": utc_now()[:10]},
             attribution={"text": "Cook All editoryal içeriği", "url": "https://cookall.local/", "required": False},
         )
-        payload = _build_payload(data, {"sourceKey": "admin_manual", "sourceRecipeId": recipe_id, "sourceContentHash": source["contentHash"]})
+        payload = _build_payload(data, {"sourceKey": "admin_manual", "sourceRecipeId": recipe_id, "sourceContentHash": source["contentHash"]}, self.store.ingredient_dictionary())
         self.store.upsert_source(source)
         self.store.upsert_recipe(payload)
-        return payload
+        return self.get("admin_manual", recipe_id)
 
     def update(self, source_key: str, source_recipe_id: str, data: RecipeInput) -> dict[str, Any] | None:
         key = {"sourceKey": source_key, "sourceRecipeId": source_recipe_id}
         existing = self.store.db.recipes.find_one(key)
         if not existing:
             return None
-        payload = _build_payload(data, existing["payload"]["sourceRef"])
+        payload = _build_payload(data, existing["payload"]["sourceRef"], self.store.ingredient_dictionary())
         self.store.db.recipeRevisions.insert_one({
             **key, "payload": existing["payload"], "createdAt": utc_now(), "reason": "admin_update"
         })
         self.store.db.recipes.update_one(key, {"$set": {"payload": payload, "updatedAt": utc_now()}})
-        return payload
+        return self.get(source_key, source_recipe_id)
 
     def set_archived(self, source_key: str, source_recipe_id: str, archived: bool) -> bool:
         result = self.store.db.recipes.update_one(
             {"sourceKey": source_key, "sourceRecipeId": source_recipe_id},
-            {"$set": {"archivedAt": utc_now() if archived else None, "updatedAt": utc_now()}},
+            {"$set": {"archivedAt": utc_now() if archived else None, "publicationStatus": "archived" if archived else "draft", "updatedAt": utc_now()}},
         )
         return result.matched_count == 1
+
+    def set_publication(self, source_key: str, source_recipe_id: str, status: Literal["draft", "published"]) -> dict[str, Any] | None:
+        key = {"sourceKey": source_key, "sourceRecipeId": source_recipe_id}
+        result = self.store.db.recipes.update_one(
+            {**key, "archivedAt": None},
+            {"$set": {"publicationStatus": status, "updatedAt": utc_now()}},
+        )
+        if not result.matched_count:
+            if self.store.db.recipes.find_one(key):
+                raise ValueError("Arşivdeki tarifi önce geri alın")
+            return None
+        return self.get(source_key, source_recipe_id)
+
+    def set_publication_bulk(self, data: BulkPublicationInput) -> BulkPublicationResult:
+        updated = 0
+        errors = []
+        seen = set()
+        for ref in data.recipes:
+            key = (ref.sourceKey, ref.sourceRecipeId)
+            if key in seen:
+                continue
+            seen.add(key)
+            try:
+                result = self.set_publication(*key, data.status)
+            except ValueError:
+                errors.append(BulkPublicationError(**ref.model_dump(), reason="archived"))
+                continue
+            if result is None:
+                errors.append(BulkPublicationError(**ref.model_dump(), reason="not_found"))
+            else:
+                updated += 1
+        return BulkPublicationResult(updatedCount=updated, errors=errors)
+
+    def resolve_ingredient_review(
+        self, fingerprint: str, canonical_key: str, alias: str, reviewed_by: str,
+    ) -> dict[str, Any]:
+        review = self.store.db.reviewQueue.find_one({"fingerprint": fingerprint})
+        if not review:
+            raise LookupError("İnceleme kaydı bulunamadı")
+        if review.get("reviewType") != "ingredient_normalization":
+            raise ValueError("Bu kayıt ingredient kararı kabul etmiyor")
+        recipe_key = {"sourceKey": review["sourceKey"], "sourceRecipeId": review["sourceRecipeId"]}
+        recipe = self.store.db.recipes.find_one(recipe_key)
+        if not recipe:
+            raise LookupError("İncelemeye bağlı tarif bulunamadı")
+        language = recipe["payload"]["language"]
+        dictionary = self.store.ingredient_dictionary()
+        valid_keys = {item["canonicalKey"] for item in dictionary.options(language)}
+        if canonical_key not in valid_keys:
+            raise ValueError("Seçilen ingredient sözlükte bulunamadı")
+        normalized_alias = clean_text(alias).casefold()
+        mapped_keys = {
+            key for (alias_language, key), aliases in dictionary.aliases.items()
+            if alias_language == language and normalized_alias in aliases
+        }
+        if mapped_keys and canonical_key not in mapped_keys:
+            raise ValueError("Bu alias sözlükte başka bir ingredient ile eşleştirilmiş")
+        self.store.save_ingredient_alias(language, alias, canonical_key, reviewed_by)
+        dictionary = self.store.ingredient_dictionary()
+        position = int(review.get("details", {}).get("position", 0))
+        ingredients = recipe["payload"].get("ingredients", [])
+        index = next((i for i, item in enumerate(ingredients) if item.get("position") == position), position - 1)
+        if index < 0 or index >= len(ingredients):
+            raise ValueError("İnceleme ingredient konumu geçersiz")
+        ingredients[index] = normalize_ingredient(ingredients[index]["originalText"], language, dictionary)
+        identity = {
+            "title": clean_text(recipe["payload"]["title"]).casefold(),
+            "language": language,
+            "ingredients": sorted({item["ingredientId"] or item["candidateSlug"] for item in ingredients}),
+            "instructions": [clean_text(item["text"]).casefold() for item in recipe["payload"].get("instructions", [])],
+        }
+        now = utc_now()
+        self.store.db.recipeRevisions.insert_one({
+            **recipe_key, "payload": recipe["payload"], "createdAt": now,
+            "reason": "ingredient_alias_review",
+        })
+        self.store.db.recipes.update_one(recipe_key, {"$set": {
+            "payload.ingredients": ingredients,
+            "payload.normalizationVersion": dictionary.version,
+            "payload.contentHash": content_hash(identity),
+            "updatedAt": now,
+        }})
+        self.store.db.reviewQueue.update_one({"fingerprint": fingerprint}, {"$set": {
+            "status": "approved", "reviewedAt": now, "reviewedBy": reviewed_by,
+            "resolution": {"canonicalKey": canonical_key, "alias": clean_text(alias)},
+        }})
+        return {"ok": True, "canonicalKey": canonical_key, "alias": clean_text(alias)}
 
 
 def page_collection(collection: Any, query: dict[str, Any], page: int, page_size: int, sort: str) -> Page:

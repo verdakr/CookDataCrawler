@@ -11,6 +11,9 @@ python3 -m pip install -e .
 cp .env.example .env
 PYTHONPATH=src python3 -m cookall_data.cli hash-password
 # Çıktıyı ADMIN_PASSWORD_HASH olarak .env içine ekleyin.
+
+PYTHONPATH=src python3 -m cookall_data.cli generate-secret
+# Çıktıyı AUTH_SECRET olarak .env içine ekleyin.
 cookall-api
 ```
 
@@ -80,3 +83,41 @@ TheMealDB aboneliği ve kullanım koşulları yeniden değerlendirilmeden yayın
 Wikibooks içeriği atıf, revizyon URL'si ve CC BY-SA paylaşım koşullarıyla birlikte
 taşınmalıdır. Kayıt seviyesinde lisansı doğrulanamayan görseller `displayAllowed=false`
 olarak işaretlenir.
+
+## Tarif yayın durumu
+
+Tarif yanıtları `publicationStatus` alanını içerir: `draft`, `published`, `archived`.
+Yeni tarifler taslak başlar. Alanı olmayan eski kayıtlar da taslak kabul edilir.
+Yayın bilgisi, normalize `payload` dışında MongoDB tarif belgesinde saklanır.
+İçerik düzenleme ve crawler reprocess işlemleri yayın durumunu korur.
+
+Admin oturumu, Origin ve CSRF doğrulamasıyla:
+
+```text
+PATCH /api/recipes/{source_key}/{source_recipe_id}/publication
+{"status": "published"}
+```
+
+`draft` değeri tarifi yayından kaldırır. Listeyi `publicationStatus=draft`,
+`published` veya `archived` ile filtreleyebilirsiniz. Bu filtre varsa eski
+`archived` parametresinden önceliklidir. Filtre yoksa mevcut aktif/arşiv davranışı korunur.
+Arşivleme yayını kaldırır. Arşivden geri alma tarifi taslağa döndürür.
+Arşivdeki tarifin yayın durumunu değiştirme isteği `409` döndürür.
+
+Bu durum editoryal seçimi belirtir. Kullanıcı API'si ve production yayın kapıları
+ayrı adımlardır; mevcut lisans ve atıf koşulları geçerlidir.
+
+### Toplu yayınlama
+
+```text
+POST /api/recipes/bulk-publication
+{"status": "published", "recipes": [{"sourceKey": "admin_manual", "sourceRecipeId": "RECIPE_ID"}]}
+```
+
+`status` için `draft` veya `published` kabul edilir. Admin oturumu, Origin ve CSRF
+kontrolü gerekir. Bir istek 1–500 tarif içerir. Aynı kimlik tekrar verilirse bir kez
+işlenir. Yanıt `updatedCount` ve `errors` alanlarını içerir. `updatedCount`, hedef
+durumda zaten bulunanlar dahil başarıyla işlenen benzersiz tarif sayısıdır.
+Arşivdeki kayıtlar `archived`, bulunamayanlar `not_found` nedeni ile atlanır.
+İşlem atomik değildir; diğer uygun tariflerin güncellenmesi devam eder.
+Admin paneli 500'den fazla seçimi parçalara ayırarak gönderir.

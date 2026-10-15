@@ -251,6 +251,27 @@
             }
           },
           {
+            "name": "publicationStatus",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "draft",
+                    "published",
+                    "archived"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Publicationstatus"
+            }
+          },
+          {
             "name": "cookall_admin",
             "in": "cookie",
             "required": false,
@@ -343,6 +364,78 @@
             "content": {
               "application/json": {
                 "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/bulk-publication": {
+      "post": {
+        "summary": "Set Recipes Publication",
+        "operationId": "set_recipes_publication_api_recipes_bulk_publication_post",
+        "parameters": [
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "name": "cookall_admin",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cookall Admin"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkPublicationInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkPublicationResult"
+                }
               }
             }
           },
@@ -561,6 +654,94 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/recipes/{source_key}/{source_recipe_id}/publication": {
+      "patch": {
+        "summary": "Set Recipe Publication",
+        "operationId": "set_recipe_publication_api_recipes__source_key___source_recipe_id__publication_patch",
+        "parameters": [
+          {
+            "name": "source_key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Key"
+            }
+          },
+          {
+            "name": "source_recipe_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Recipe Id"
+            }
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "name": "cookall_admin",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cookall Admin"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PublicationInput"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -964,6 +1145,143 @@
                 "schema": {
                   "$ref": "#/components/schemas/Page"
                 }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ingredients": {
+      "get": {
+        "summary": "Ingredients",
+        "operationId": "ingredients_api_ingredients_get",
+        "parameters": [
+          {
+            "name": "language",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "enum": [
+                "tr",
+                "en"
+              ],
+              "type": "string",
+              "default": "tr",
+              "title": "Language"
+            }
+          },
+          {
+            "name": "cookall_admin",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cookall Admin"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/reviews/{fingerprint}/resolve-ingredient": {
+      "post": {
+        "summary": "Resolve Ingredient Review",
+        "operationId": "resolve_ingredient_review_api_reviews__fingerprint__resolve_ingredient_post",
+        "parameters": [
+          {
+            "name": "fingerprint",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Fingerprint"
+            }
+          },
+          {
+            "name": "x-csrf-token",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Csrf-Token"
+            }
+          },
+          {
+            "name": "cookall_admin",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cookall Admin"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/IngredientResolutionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
               }
             }
           },
@@ -1696,6 +2014,85 @@
         ],
         "title": "Body_restore_backup_api_backups_restore_post"
       },
+      "BulkPublicationError": {
+        "properties": {
+          "sourceKey": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Sourcekey"
+          },
+          "sourceRecipeId": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Sourcerecipeid"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "archived",
+              "not_found"
+            ],
+            "title": "Reason"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceKey",
+          "sourceRecipeId",
+          "reason"
+        ],
+        "title": "BulkPublicationError"
+      },
+      "BulkPublicationInput": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "title": "Status"
+          },
+          "recipes": {
+            "items": {
+              "$ref": "#/components/schemas/RecipeSelection"
+            },
+            "type": "array",
+            "maxItems": 500,
+            "minItems": 1,
+            "title": "Recipes"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status",
+          "recipes"
+        ],
+        "title": "BulkPublicationInput"
+      },
+      "BulkPublicationResult": {
+        "properties": {
+          "updatedCount": {
+            "type": "integer",
+            "title": "Updatedcount"
+          },
+          "errors": {
+            "items": {
+              "$ref": "#/components/schemas/BulkPublicationError"
+            },
+            "type": "array",
+            "title": "Errors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "updatedCount",
+          "errors"
+        ],
+        "title": "BulkPublicationResult"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -1723,6 +2120,28 @@
           "text"
         ],
         "title": "IngredientInput"
+      },
+      "IngredientResolutionInput": {
+        "properties": {
+          "canonicalKey": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Canonicalkey"
+          },
+          "alias": {
+            "type": "string",
+            "maxLength": 180,
+            "minLength": 1,
+            "title": "Alias"
+          }
+        },
+        "type": "object",
+        "required": [
+          "canonicalKey",
+          "alias"
+        ],
+        "title": "IngredientResolutionInput"
       },
       "JobInput": {
         "properties": {
@@ -1819,6 +2238,23 @@
           "pages"
         ],
         "title": "Page"
+      },
+      "PublicationInput": {
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "draft",
+              "published"
+            ],
+            "title": "Status"
+          }
+        },
+        "type": "object",
+        "required": [
+          "status"
+        ],
+        "title": "PublicationInput"
       },
       "RecipeInput": {
         "properties": {
@@ -2012,6 +2448,28 @@
           "instructions"
         ],
         "title": "RecipeInput"
+      },
+      "RecipeSelection": {
+        "properties": {
+          "sourceKey": {
+            "type": "string",
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Sourcekey"
+          },
+          "sourceRecipeId": {
+            "type": "string",
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Sourcerecipeid"
+          }
+        },
+        "type": "object",
+        "required": [
+          "sourceKey",
+          "sourceRecipeId"
+        ],
+        "title": "RecipeSelection"
       },
       "ReviewInput": {
         "properties": {

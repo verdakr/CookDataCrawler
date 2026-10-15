@@ -49,20 +49,40 @@ VARIANTS = {
 class IngredientDictionary:
     version: str
     aliases: dict[tuple[str, str], set[str]]
+    labels: dict[tuple[str, str], str]
 
     @classmethod
-    def load(cls, path: Path | None = None) -> "IngredientDictionary":
+    def load(
+        cls,
+        path: Path | None = None,
+        extra_aliases: list[dict[str, str]] | None = None,
+    ) -> "IngredientDictionary":
         if path is None:
             path = Path(__file__).resolve().parents[2] / "data" / "ingredient_dictionary.v1.json"
         payload = json.loads(path.read_text(encoding="utf-8"))
         aliases: dict[tuple[str, str], set[str]] = {}
+        labels: dict[tuple[str, str], str] = {}
         for ingredient in payload["ingredients"]:
             for label in ingredient["labels"]:
                 names = {label["name"], *label.get("aliases", [])}
-                aliases[(label["language"], ingredient["canonicalKey"])] = {
+                key = (label["language"], ingredient["canonicalKey"])
+                labels[key] = label["name"]
+                aliases[key] = {
                     clean_text(name).casefold() for name in names
                 }
-        return cls(payload["version"], aliases)
+        for item in extra_aliases or []:
+            key = (item["language"], item["canonicalKey"])
+            if key in aliases:
+                aliases[key].add(clean_text(item["alias"]).casefold())
+        version = payload["version"] + ("+admin" if extra_aliases else "")
+        return cls(version, aliases, labels)
+
+    def options(self, language: str) -> list[dict[str, str]]:
+        return [
+            {"canonicalKey": canonical_key, "label": label}
+            for (item_language, canonical_key), label in sorted(self.labels.items(), key=lambda item: item[1].casefold())
+            if item_language == language
+        ]
 
 
 def _number(token: str) -> float | None:

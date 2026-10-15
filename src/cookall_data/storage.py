@@ -12,7 +12,7 @@ from .util import utc_now
 
 COLLECTIONS = (
     "sourceRecords", "sourceRevisions", "recipes", "recipeRevisions",
-    "reviewQueue", "etlRuns", "collectionCheckpoints", "crawlerJobs", "crawlerJobEvents",
+    "reviewQueue", "ingredientAliases", "etlRuns", "collectionCheckpoints", "crawlerJobs", "crawlerJobEvents",
 )
 
 
@@ -59,6 +59,8 @@ class MongoStore:
         self.db.crawlerJobs.create_index("jobId", unique=True)
         self.db.crawlerJobs.create_index([("status", 1), ("createdAt", 1)])
         self.db.crawlerJobEvents.create_index([("jobId", 1), ("sequence", 1)], unique=True)
+        self.db.ingredientAliases.create_index([("language", 1), ("normalizedAlias", 1)], unique=True)
+        self.db.loginAttempts.create_index("identity", unique=True)
 
     def begin_run(self, source_key: str, normalization_version: str) -> str:
         run_id = str(uuid.uuid4())
@@ -103,7 +105,7 @@ class MongoStore:
         now = utc_now()
         self.db.recipes.update_one(
             key,
-            {"$set": {"payload": recipe, "updatedAt": now}, "$setOnInsert": {"createdAt": now, "archivedAt": None}},
+            {"$set": {"payload": recipe, "updatedAt": now}, "$setOnInsert": {"createdAt": now, "archivedAt": None, "publicationStatus": "draft"}},
             upsert=True,
         )
 
@@ -141,6 +143,30 @@ class MongoStore:
 
     def clear_checkpoint(self, checkpoint_key: str) -> None:
         self.db.collectionCheckpoints.delete_one({"checkpointKey": checkpoint_key})
+
+    def ingredient_dictionary(self):
+        from .normalization import IngredientDictionary
+
+        aliases = [without_id(row) or {} for row in self.db.ingredientAliases.find()]
+        return IngredientDictionary.load(extra_aliases=aliases)
+
+    def save_ingredient_alias(
+        self, language: str, alias: str, canonical_key: str, reviewed_by: str,
+    ) -> None:
+        from .util import clean_text
+
+        normalized = clean_text(alias).casefold()
+        existing = self.db.ingredientAliases.find_one({"language": language, "normalizedAlias": normalized})
+        if existing and existing["canonicalKey"] != canonical_key:
+            raise ValueError("Bu alias başka bir ingredient ile eşleştirilmiş")
+        self.db.ingredientAliases.update_one(
+            {"language": language, "normalizedAlias": normalized},
+            {"$set": {
+                "alias": clean_text(alias), "canonicalKey": canonical_key,
+                "reviewedBy": reviewed_by, "updatedAt": utc_now(),
+            }, "$setOnInsert": {"createdAt": utc_now()}},
+            upsert=True,
+        )
 
     def recipes(self, *, include_archived: bool = False) -> list[dict[str, Any]]:
         query = {} if include_archived else {"archivedAt": None}
